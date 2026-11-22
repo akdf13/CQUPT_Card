@@ -1,0 +1,43 @@
+# ---- 依赖与构建产物 ----
+node_modules/
+dist/
+dist-apk/
+build/
+out/
+*.apk
+*.aab
+*.iml
+.gradle/
+
+# ---- 签名材料 ----
+*.jks
+*.keystore
+*.p12
+
+# ---- 第三方二进制（自行下载，见 docs/04-APK打包.md）----
+app/android/libs/
+
+# ---- 逆向留档：含原版 APK 与解包资源，不入库 ----
+apk/
+reverse/
+third/
+
+# ---- 真机截图：含真实数据，未脱敏 ----
+shots/real-*
+
+# ---- 本地环境与临时产物 ----
+.env
+.env.*
+*.log
+.vite/
+__pycache__/
+probe/out/
+probe/sid.txt
+*.tmp
+
+# ---- Chrome 调试用的用户数据目录 ----
+.chrome-direct/
+**/.chrome-direct/
+
+# ---- 截图：README 用 docs/images 下的副本，其余为过程稿
+shots/

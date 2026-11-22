@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  自适应图标前景层。
+  安全区：108dp 画布中心 72dp（18~90），超出部分会被启动器裁掉。
+  卡片图案占安全区约 70%（宽 46dp / 高 32dp），是自适应图标的推荐占比 ——
+  上一版按原 SVG 比例直接缩到 40dp，视觉上偏小，桌面上一眼显得空。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 卡片外框 -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.6"
+        android:pathData="M35.5,36h37a4.5,4.5 0 0 1 4.5,4.5v23a4.5,4.5 0 0 1 -4.5,4.5h-37a4.5,4.5 0 0 1 -4.5,-4.5v-23a4.5,4.5 0 0 1 4.5,-4.5z" />
+
+    <!-- 磁条 -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.6"
+        android:strokeLineCap="round"
+        android:pathData="M31,47.5h46" />
+
+    <!-- 卡号条 -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M38,57h14a1.7,1.7 0 0 1 0,3.4h-14a1.7,1.7 0 0 1 0,-3.4z" />
+
+    <!-- 芯片点 -->
+    <path
+        android:fillColor="#E6FFFFFF"
+        android:pathData="M68,58.7m-2.8,0a2.8,2.8 0 1,0 5.6,0a2.8,2.8 0 1,0 -5.6,0" />
+</vector>

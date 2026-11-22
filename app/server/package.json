@@ -1,0 +1,12 @@
+{
+  "name": "cqupt-yikatong-server",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "重邮一卡通 PWA 后端：上游加密网关适配 + 会话 + 聚合",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  }
+}

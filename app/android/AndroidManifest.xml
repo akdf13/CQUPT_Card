@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.cqupt.card"
+    android:versionCode="6"
+    android:versionName="1.0.5">
+
+    <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="34" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
+    <!--
+        Android 11（API 30）起，没有这段 <queries> 就"看不见"支付宝/微信，
+        startActivity 会直接 ActivityNotFoundException —— 表现为"点了充值没有任何反应"。
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="alipays" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="alipayqr" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="weixin" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="weixinpay" />
+        </intent>
+        <!-- 支付宝 SDK 内部要 getPackageInfo 判断装了哪个钱包 -->
+        <package android:name="com.eg.android.AlipayGphone" />
+        <package android:name="com.eg.android.AlipayGphoneRC" />
+        <package android:name="hk.alipay.wallet" />
+    </queries>
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"
+        android:supportsRtl="true"
+        android:hardwareAccelerated="true"
+        android:allowBackup="false"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+
+        <uses-library
+            android:name="org.apache.http.legacy"
+            android:required="false" />
+
+        <!-- 以下 6 个 activity 由支付宝 SDK 15.8.17 提供，缺了会 ClassNotFound -->
+        <activity
+            android:name="com.alipay.sdk.app.H5PayActivity"
+            android:configChanges="orientation|keyboardHidden|navigation|screenSize|locale|keyboard|screenLayout|density|fontScale|layoutDirection|smallestScreenSize"
+            android:exported="false"
+            android:theme="@android:style/Theme.NoTitleBar" />
+        <activity
+            android:name="com.alipay.sdk.app.H5AuthActivity"
+            android:configChanges="orientation|keyboardHidden|navigation|screenSize|locale|keyboard|screenLayout|density|fontScale|layoutDirection|smallestScreenSize"
+            android:exported="false"
+            android:theme="@android:style/Theme.NoTitleBar" />
+        <activity
+            android:name="com.alipay.sdk.app.PayResultActivity"
+            android:configChanges="orientation|keyboardHidden|navigation|screenSize|locale|keyboard|screenLayout|density|fontScale|layoutDirection|smallestScreenSize"
+            android:exported="true"
+            android:launchMode="singleInstance"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <activity
+            android:name="com.alipay.sdk.app.AlipayResultActivity"
+            android:configChanges="orientation|keyboardHidden|navigation|screenSize|locale|keyboard|screenLayout|density|fontScale|layoutDirection|smallestScreenSize"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <activity
+            android:name="com.alipay.sdk.app.H5OpenAuthActivity"
+            android:configChanges="orientation|keyboardHidden|navigation|screenSize|locale|keyboard|screenLayout|density|fontScale|layoutDirection|smallestScreenSize"
+            android:exported="false"
+            android:screenOrientation="behind"
+            android:windowSoftInputMode="adjustResize|stateHidden" />
+        <activity
+            android:name="com.alipay.sdk.app.APayEntranceActivity"
+            android:configChanges="orientation|keyboardHidden|navigation|screenSize|locale|keyboard|screenLayout|density|fontScale|layoutDirection|smallestScreenSize"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <activity
+            android:name="com.cqupt.card.MainActivity"            android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode|density"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

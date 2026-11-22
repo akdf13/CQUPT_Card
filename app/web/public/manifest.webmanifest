@@ -1,0 +1,20 @@
+{
+  "name": "重邮一卡通 · 重写版",
+  "short_name": "一卡通",
+  "description": "余额、付款码、洗澡开水、电费一站完成",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F6F8FA",
+  "theme_color": "#1D5BEA",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

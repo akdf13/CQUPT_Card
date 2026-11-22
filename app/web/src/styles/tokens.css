@@ -1,0 +1,159 @@
+/* ============================================================
+   设计 Token —— 来源：一卡通App设计规范-调研与Token.md
+   原则：金融信任型工具，高度可预期的骨架 + 极少量情绪化表达
+   ============================================================ */
+:root {
+  /* ---- 主色（校园蓝）---- */
+  --primary-600: #1d5bea;
+  --primary-700: #164bc4;
+  --primary-500: #3d74f0;
+  --primary-100: #dbe6ff;
+  --primary-50: #eef4ff;
+
+  /* ---- 中性色（ink）---- */
+  --ink-900: #0f1720;
+  --ink-800: #1b2733;
+  --ink-700: #33414f;
+  --ink-600: #48586a;
+  --ink-500: #5b6b7a;
+  --ink-400: #7d8b98;
+  --ink-300: #a9b4bf;
+  --ink-200: #d7dee5;
+  --ink-100: #edf1f5;
+  --ink-50: #f6f8fa;
+  --white: #ffffff;
+
+  /* ---- 语义色 ---- */
+  --success-600: #12855b;
+  --success-50: #e8f6f0;
+  --warning-600: #a85b00;
+  --warning-50: #fff4e5;
+  --danger-600: #c0271e;
+  --danger-50: #fdecea;
+  --info-600: #0b6fa4;
+  --accent-500: #f2994a;
+
+  /* ---- 语义化表面 ---- */
+  --bg-page: var(--ink-50);
+  --bg-card: var(--white);
+  --bg-inset: var(--ink-100);
+  --bg-hover: var(--ink-100);
+  --line: var(--ink-200);
+  --line-soft: var(--ink-100);
+  --text-primary: var(--ink-900);
+  --text-secondary: var(--ink-500);
+  --text-tertiary: var(--ink-400);
+  --text-on-primary: #ffffff;
+
+  /* ---- 字体 ---- */
+  --font-sans: "HarmonyOS Sans SC", "Source Han Sans SC", "Noto Sans CJK SC", "PingFang SC",
+    "Microsoft YaHei UI", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --font-num: "SF Pro Display", "DIN Alternate", "HarmonyOS Sans SC", system-ui, sans-serif;
+
+  /* 字阶：字号/字重/行高/字距 */
+  --fs-display: 40px;
+  --lh-display: 48px;
+  --fs-h1: 24px;
+  --lh-h1: 32px;
+  --fs-h2: 20px;
+  --lh-h2: 28px;
+  --fs-h3: 17px;
+  --lh-h3: 24px;
+  --fs-body: 15px;
+  --lh-body: 23px;
+  --fs-body-s: 13px;
+  --lh-body-s: 20px;
+  --fs-label: 11px;
+  --lh-label: 16px;
+  --fs-num: 17px;
+  --lh-num: 24px;
+
+  /* ---- 间距：基数 4，栅格 8 ---- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --page-x: 20px;
+  --card-pad: 16px;
+  --gap-card: 12px;
+  --gap-block: 24px;
+
+  /* ---- 圆角 ---- */
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-btn: 14px;
+  --r-full: 999px;
+
+  /* ---- 阴影（只允许一层）---- */
+  --elev-1: 0 1px 2px rgba(15, 23, 32, 0.06), 0 1px 3px rgba(15, 23, 32, 0.08);
+  --elev-2: 0 4px 12px rgba(15, 23, 32, 0.08);
+  --elev-3: 0 12px 32px rgba(15, 23, 32, 0.12);
+
+  /* ---- 动效 ---- */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 1, 1);
+  --dur-instant: 100ms;
+  --dur-fast: 180ms;
+  --dur-base: 240ms;
+  --dur-emphasized: 320ms;
+  --dur-expressive: 480ms;
+
+  /* ---- 布局 ---- */
+  --tabbar-h: 64px;
+  --appbar-h: 56px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+  --max-w: 480px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-page: #0f1417;
+    --bg-card: #1a2228;
+    --bg-inset: #232c33;
+    --bg-hover: #232c33;
+    --line: #2e383f;
+    --line-soft: #232c33;
+    --text-primary: #e8edf2;
+    --text-secondary: #a3b1bd;
+    --text-tertiary: #7f8d99;
+    --primary-600: #8faeff;
+    --primary-700: #6f92f5;
+    --primary-500: #a7c0ff;
+    --primary-100: #26344d;
+    --primary-50: #1b2537;
+    --success-600: #4ecfa0;
+    --success-50: #142c24;
+    --warning-600: #e0a75b;
+    --warning-50: #2b2317;
+    --danger-600: #f28b83;
+    --danger-50: #2c1b1a;
+    --info-600: #6cb8e0;
+    --text-on-primary: #0f1417;
+    --elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --elev-2: 0 4px 12px rgba(0, 0, 0, 0.45);
+    --elev-3: 0 12px 32px rgba(0, 0, 0, 0.55);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-instant: 0ms;
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+    --dur-emphasized: 0ms;
+    --dur-expressive: 0ms;
+  }
+  * {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
