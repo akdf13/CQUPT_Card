@@ -30,10 +30,52 @@ const MC_KEY = "gQCob9ZNJ7k0WUjr";
 
 export class UpstreamError extends Error {
   code: string;
-  constructor(message: string, code = "UPSTREAM") {
+  /** 服务端原始响应片段，出「格式异常」时把它一起带出来，方便定位是网关换了结构还是被中间设备改写 */
+  raw?: string;
+  constructor(message: string, code = "UPSTREAM", raw?: string) {
     super(message);
     this.name = "UpstreamError";
     this.code = code;
+    this.raw = raw;
+  }
+}
+
+/** 最近 20 次「非预期响应」留档，排查用（localStorage，不上传） */
+const BAD_LOG_KEY = "cqupt.badResponses";
+interface BadRecord {
+  at: number;
+  action: string;
+  status: number;
+  len: number;
+  head: string;
+}
+function recordBad(action: string, status: number, text: string) {
+  try {
+    const list: BadRecord[] = JSON.parse(localStorage.getItem(BAD_LOG_KEY) || "[]");
+    list.unshift({
+      at: Date.now(),
+      action,
+      status,
+      len: text.length,
+      head: text.slice(0, 300),
+    });
+    localStorage.setItem(BAD_LOG_KEY, JSON.stringify(list.slice(0, 20)));
+  } catch {
+    /* localStorage 不可用时忽略 */
+  }
+}
+export function badResponses(): BadRecord[] {
+  try {
+    return JSON.parse(localStorage.getItem(BAD_LOG_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+export function clearBadResponses() {
+  try {
+    localStorage.removeItem(BAD_LOG_KEY);
+  } catch {
+    /* ignore */
   }
 }
 
@@ -105,6 +147,8 @@ export function generateMAC(s: string): string {
 
 /* ------------------------------------------------------------------ 传输层 */
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 function request(
   url: string,
   init: { method?: string; body?: string; timeout?: number; arraybuffer?: boolean },
@@ -118,13 +162,38 @@ function request(
     if (method === "POST") xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 400) {
+        const text = arraybuffer ? "" : xhr.responseText;
+        // 弱网下偶尔会「连上了但只收到半截」，这种情况直接当失败，上层会重试
+        const declared = Number(xhr.getResponseHeader("Content-Length") || 0);
+        if (!arraybuffer && declared > 0 && text.length > 0) {
+          const actual = new TextEncoder().encode(text).length;
+          if (Math.abs(actual - declared) > 2) {
+            recordBad(`${url.split("!").pop()}(truncated)`, xhr.status, `declared=${declared} actual=${actual}`);
+            reject(
+              new UpstreamError(
+                `学校系统返回不完整（${actual}/${declared} 字节）`,
+                "BAD_RESPONSE",
+                text.slice(0, 300),
+              ),
+            );
+            return;
+          }
+        }
         resolve({
-          text: arraybuffer ? "" : xhr.responseText,
+          text,
           buffer: arraybuffer ? (xhr.response as ArrayBuffer) : null,
           status: xhr.status,
         });
       } else {
-        reject(new UpstreamError(`学校系统返回异常（HTTP ${xhr.status}）`, "HTTP_ERROR"));
+        const body = arraybuffer ? "" : xhr.responseText || "";
+        recordBad(`${url.split("!").pop()}`, xhr.status, body);
+        reject(
+          new UpstreamError(
+            `学校系统返回异常（HTTP ${xhr.status}）`,
+            "HTTP_ERROR",
+            body.slice(0, 300),
+          ),
+        );
       }
     };
     xhr.onerror = () =>
@@ -144,20 +213,46 @@ function form(obj: Record<string, unknown>): string {
   return parts.join("&");
 }
 
-/** 取一次性 uuid，用作登录信封的派生密钥来源 */
-export async function newUuid(): Promise<string> {
-  const res = await request(NEWID, { body: form({ TIMESTAMP: Date.now() }), timeout: 10000 });
-  let arr: unknown;
+/** 把网关返回的 `[{IS_SUCCESS,DATA,MSG}]` 拆出来；不是 JSON 就留档并抛 BAD_RESPONSE */
+function parseOuter(text: string, action: string, status: number) {
+  let parsed: unknown;
   try {
-    arr = JSON.parse(res.text);
+    parsed = JSON.parse(text);
   } catch {
-    throw new UpstreamError("学校系统返回格式异常", "BAD_RESPONSE");
+    recordBad(action, status, text);
+    const brief = text.trim().replace(/\s+/g, " ").slice(0, 60);
+    throw new UpstreamError(
+      `学校系统返回了非预期内容（HTTP ${status} · ${text.length} 字节${brief ? ` · ${brief}` : ""}）`,
+      "BAD_RESPONSE",
+      text.slice(0, 300),
+    );
   }
-  const head = (Array.isArray(arr) ? arr[0] : arr) as { IS_SUCCESS?: string; DATA?: string; MSG?: string };
-  if (!head || head.IS_SUCCESS !== "T" || !head.DATA) {
-    throw new UpstreamError(head?.MSG || "获取会话标识失败", "NEWID_FAIL");
+  return (Array.isArray(parsed) ? parsed[0] : parsed) as { IS_SUCCESS?: string; DATA?: string; MSG?: string };
+}
+
+/** 一次性的 uuid，用作登录信封的派生密钥来源。偶发非预期响应时自动重试一次 */
+export async function newUuid(): Promise<string> {
+  const attempt = async () => {
+    const res = await request(NEWID, { body: form({ TIMESTAMP: Date.now() }), timeout: 10000 });
+    const head = parseOuter(res.text, "newid", res.status);
+    if (!head || head.IS_SUCCESS !== "T" || !head.DATA) {
+      throw new UpstreamError(head?.MSG || "获取会话标识失败", "NEWID_FAIL", res.text.slice(0, 300));
+    }
+    return head.DATA;
+  };
+  let lastErr: unknown;
+  for (let i = 0; i < 3; i++) {
+    try {
+      return await attempt();
+    } catch (e) {
+      lastErr = e;
+      const code = (e as UpstreamError).code;
+      const retryable = code === "BAD_RESPONSE" || code === "NETWORK" || code === "TIMEOUT";
+      if (!retryable || i === 2) throw e;
+      await sleep(300 * (i + 1));
+    }
   }
-  return head.DATA;
+  throw lastErr;
 }
 
 export interface CallOpts {
@@ -208,26 +303,39 @@ export async function call(service: string, params: Params = {}, opts: CallOpts 
     body = { INFO: encryptPkey(plain, encryptSub16(token)), USID: userid ?? "" };
   }
 
-  const res = await request(GATEWAY, { body: form(body), timeout });
-  let outer: unknown;
-  try {
-    outer = JSON.parse(res.text);
-  } catch {
-    throw new UpstreamError("学校系统返回格式异常", "BAD_RESPONSE");
-  }
-  const head = (Array.isArray(outer) ? outer[0] : outer) as {
-    IS_SUCCESS?: string;
-    DATA?: string;
-    MSG?: string;
+  /**
+   * 发一次并解码。`非预期内容 / 连接失败 / 超时` 视为「这次没拿到业务结果」，
+   * 上层会重试一次 —— 网关偶发返回半截内容时，重试通常就好了。
+   */
+  const attempt = async () => {
+    const res = await request(GATEWAY, { body: form(body), timeout });
+    const head = parseOuter(res.text, service, res.status);
+    if (!head || head.IS_SUCCESS !== "T" || !head.DATA) {
+      throw new UpstreamError(head?.MSG || "学校系统拒绝了这次请求", "UPSTREAM_REJECT", res.text.slice(0, 300));
+    }
+    try {
+      return JSON.parse(decrypt(head.DATA));
+    } catch {
+      recordBad(`${service}(decrypt)`, res.status, String(head.DATA).slice(0, 300));
+      throw new UpstreamError("响应解密失败", "BAD_PAYLOAD", String(head.DATA).slice(0, 300));
+    }
   };
-  if (!head || head.IS_SUCCESS !== "T" || !head.DATA) {
-    throw new UpstreamError(head?.MSG || "学校系统拒绝了这次请求", "UPSTREAM_REJECT");
+
+  // 弱网下偶发失败就重发：最多 3 次尝试（350ms / 700ms 退避）。
+  // 这层比上游的 timeout(15s) 更早生效，用户基本感知不到。
+  let lastErr: unknown;
+  for (let i = 0; i < 3; i++) {
+    try {
+      return await attempt();
+    } catch (e) {
+      lastErr = e;
+      const code = (e as UpstreamError).code;
+      const retryable = code === "BAD_RESPONSE" || code === "NETWORK" || code === "TIMEOUT";
+      if (!retryable || i === 2) throw e;
+      await sleep(350 * (i + 1));
+    }
   }
-  try {
-    return JSON.parse(decrypt(head.DATA));
-  } catch {
-    throw new UpstreamError("响应解密失败", "BAD_PAYLOAD");
-  }
+  throw lastErr;
 }
 
 /* -------------------------------------------------------------------- 头像 */
@@ -252,8 +360,16 @@ export async function fetchAvatar(employeeNo: string): Promise<string | null> {
       arraybuffer: true,
     });
     const buf = res.buffer;
-    if (!buf || buf.byteLength === 0) return null;
-    return `data:image/png;base64,${bufToBase64(buf)}`;
+    // 这个接口在没照片时会回几个字节的错误串，直接当图片用会渲染成破图
+    if (!buf || buf.byteLength < 64) return null;
+    const b = new Uint8Array(buf);
+    const isPng = b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47;
+    const isJpg = b[0] === 0xff && b[1] === 0xd8;
+    const isGif = b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46;
+    const isWebp = b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46;
+    if (!isPng && !isJpg && !isGif && !isWebp) return null;
+    const mime = isPng ? "image/png" : isJpg ? "image/jpeg" : isGif ? "image/gif" : "image/webp";
+    return `data:${mime};base64,${bufToBase64(buf)}`;
   } catch {
     return null;
   }

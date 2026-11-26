@@ -41,3 +41,6 @@ probe/sid.txt
 
 # ---- 截图：README 用 docs/images 下的副本，其余为过程稿
 shots/
+
+# ---- 本地存档（Release 文案等） ----
+backups/

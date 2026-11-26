@@ -7,6 +7,7 @@ import Icon from "../components/Icon.vue";
 import Sheet from "../components/Sheet.vue";
 import { Api } from "../api";
 import { state, doLogout, refreshBalance, toast, toastError, money, moneyOrDash } from "../store";
+import { badResponses, clearBadResponses } from "../core/upstream";
 
 const router = useRouter();
 defineOptions({ name: "MeView" });
@@ -73,8 +74,28 @@ function onDocDown(e: PointerEvent) {
   pwdTip.value = false;
 }
 
+/** 「学校系统返回格式异常」的现场留档：有记录时在关于面板里露出，点一下就能复制给作者 */
+const badLog = ref<ReturnType<typeof badResponses>>([]);
+
+async function copyBadLog() {
+  const text = JSON.stringify(badResponses(), null, 2);
+  try {
+    await navigator.clipboard.writeText(text);
+    toast("已复制诊断信息，可发给作者", "success");
+  } catch {
+    toast("复制失败，请截图本页");
+  }
+}
+
+async function clearLog() {
+  clearBadResponses();
+  badLog.value = [];
+  toast("已清空诊断记录");
+}
+
 onMounted(() => {
   refreshBalance(true).catch(() => {});
+  badLog.value = badResponses();
   document.addEventListener("pointerdown", onDocDown);
 });
 onUnmounted(() => document.removeEventListener("pointerdown", onDocDown));
@@ -183,6 +204,18 @@ onUnmounted(() => document.removeEventListener("pointerdown", onDocDown));
           <button class="maker-row" @click="copyQQ">
             <Icon name="user" :size="15" />
             <span>QQ 2768703273</span>
+          </button>
+        </div>
+
+        <div v-if="badLog.length" class="maker diag">
+          <span class="maker-label">诊断（最近 {{ badLog.length }} 次异常响应）</span>
+          <button class="maker-row" @click="copyBadLog">
+            <Icon name="info" :size="15" />
+            <span>复制给作者</span>
+          </button>
+          <button class="maker-row" @click="clearLog">
+            <Icon name="x" :size="15" />
+            <span>清空记录</span>
           </button>
         </div>
       </div>
